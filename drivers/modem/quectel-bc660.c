@@ -5,6 +5,8 @@ LOG_MODULE_REGISTER(modem_quectel_bc660, CONFIG_MODEM_LOG_LEVEL);
 
 #include "quectel-bc660.h"
 
+#define DUMMY_GPIO_SPEC { .port = NULL, .pin = 0, .dt_flags = 0 }
+
 static struct k_thread	       modem_rx_thread;
 static struct k_work_q	       modem_workq;
 static struct modem_data       mdata;
@@ -15,7 +17,12 @@ static K_KERNEL_STACK_DEFINE(modem_rx_stack, CONFIG_MODEM_QUECTEL_BC660_RX_STACK
 static K_KERNEL_STACK_DEFINE(modem_workq_stack, CONFIG_MODEM_QUECTEL_BC660_RX_WORKQ_STACK_SIZE);
 NET_BUF_POOL_DEFINE(mdm_recv_pool, MDM_RECV_MAX_BUF, MDM_RECV_BUF_SIZE, 0, NULL);
 
+#if DT_INST_NODE_HAS_PROP(0, mdm_power_gpios)
 static const struct gpio_dt_spec power_gpio = GPIO_DT_SPEC_INST_GET(0, mdm_power_gpios);
+#else
+static const struct gpio_dt_spec power_gpio = DUMMY_GPIO_SPEC;
+#endif
+
 #if DT_INST_NODE_HAS_PROP(0, mdm_reset_gpios)
 static const struct gpio_dt_spec reset_gpio = GPIO_DT_SPEC_INST_GET(0, mdm_reset_gpios);
 #endif
@@ -945,7 +952,6 @@ static const struct modem_cmd unsol_cmds[] = {
 /* Commands sent to the modem to set it up at boot time. */
 static const struct setup_cmd setup_cmds[] = {
 	SETUP_CMD_NOHANDLE("ATE0"),
-	SETUP_CMD_NOHANDLE("ATH"),
 	SETUP_CMD_NOHANDLE("AT+CMEE=1"),
 
 	/* Commands to read info from the modem (things like IMEI, Model etc). */
